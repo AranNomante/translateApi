@@ -8,6 +8,57 @@ import { SupportedLanguages } from '../utils/supportedLangs';
 export class ChatGptController {
   constructor(@inject(ChatGptService) private chatGptService: ChatGptService) {}
 
+  private getParameters(req: Request) {
+    console.log(req.body);
+    const from: SupportedLanguages = (
+      (req.body.from as string) ?? ''
+    ).toUpperCase() as SupportedLanguages;
+
+    const to: SupportedLanguages = (
+      (req.body.to as string) ?? ''
+    ).toUpperCase() as SupportedLanguages;
+
+    const target: string = req.body.target ?? '';
+
+    return { from, to, target };
+  }
+
+  private checkParameters(
+    from: string,
+    to: string,
+    target: string,
+  ): string | void {
+    if (
+      !Object.keys(SupportedLanguages).includes(from) ||
+      !Object.keys(SupportedLanguages).includes(to)
+    )
+      return 'Language not supported.';
+
+    if (target.length > 4097) return 'Target text is too long.';
+
+    if (!target.length) return 'Target text is too short.';
+  }
+
+  private async getResponse(
+    prompt: string,
+  ): Promise<{ response: string; error?: string }> {
+    try {
+      const response = await this.chatGptService.generateResponse(prompt);
+      return { response };
+    } catch (error) {
+      if (
+        (error as { response: { status: number } })?.response?.status === 429
+      ) {
+        return {
+          response: '',
+          error: 'Too many requests. Please try again later.',
+        };
+      } else {
+        return { response: '', error: 'Something went wrong.' };
+      }
+    }
+  }
+
   @httpGet('/')
   async welcomeMessage(req: Request, res: Response): Promise<void> {
     res.send({ message: 'Welcome to the Translate api' });
@@ -18,43 +69,51 @@ export class ChatGptController {
     res.send({ supportedLanguages: Object.keys(SupportedLanguages) });
   }
 
-  @httpPost('/translate')
-  async generateResponse(req: Request, res: Response): Promise<void> {
+  @httpPost('/suggest')
+  async suggest(req: Request, res: Response): Promise<void> {
     // send json as application/json
-    const from: SupportedLanguages = (
-      (req.body.from as string) ?? ''
-    ).toUpperCase() as SupportedLanguages;
-    const to: SupportedLanguages = (
-      (req.body.to as string) ?? ''
-    ).toUpperCase() as SupportedLanguages;
-    const target = req.body.target;
+    const { from, to, target } = this.getParameters(req);
 
-    if (
-      !Object.keys(SupportedLanguages).includes(from) ||
-      !Object.keys(SupportedLanguages).includes(to)
-    ) {
-      res.status(400).send({ error: 'Language not supported.' });
+    const error = this.checkParameters(from, to, target);
+
+    if (error) {
+      res.status(400).send({ error });
       return;
     }
 
-    if (target.length > 4097) {
-      res.status(400).send({ error: 'Target text is too long.' });
+    const prompt = `show translation suggestions for the following word from ${from} to ${to}, explain suggestions: ${target}`;
+
+    const result = await this.getResponse(prompt);
+
+    if (result.error) {
+      res.status(400).send({ error: result.error });
+      return;
+    }
+
+    res.send({ suggestions: result.response });
+  }
+
+  @httpPost('/translate')
+  async generateResponse(req: Request, res: Response): Promise<void> {
+    // send json as application/json
+    const { from, to, target } = this.getParameters(req);
+
+    const error = this.checkParameters(from, to, target);
+
+    if (error) {
+      res.status(400).send({ error });
       return;
     }
 
     const prompt = `translate following from ${from} to ${to}: ${target}`;
 
-    try {
-      const response = await this.chatGptService.generateResponse(prompt);
-      res.send({ response });
-    } catch (error) {
-      if ((error as { response: { status: number } }).response.status === 429) {
-        res.status(429).send({ error: 'Too many requests.' });
-      } else {
-        res.status(400).send({
-          error: 'An error occurred while generating the response.',
-        });
-      }
+    const result = await this.getResponse(prompt);
+
+    if (result.error) {
+      res.status(400).send({ error: result.error });
+      return;
     }
+
+    res.send({ translation: result.response });
   }
 }
