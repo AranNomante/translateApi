@@ -49,7 +49,7 @@ export class ChatGptController {
       res.send({ response });
     } catch (error) {
       res
-        .status(500)
+        .status(400)
         .send({ error: 'An error occurred while generating the response.' });
     }
   }
