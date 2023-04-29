@@ -42,7 +42,7 @@ export class ChatGptController {
       return;
     }
 
-    const prompt = `translate following from ${from} to ${to} ${target}`;
+    const prompt = `translate following from ${from} to ${to}: ${target}`;
 
     try {
       const response = await this.chatGptService.generateResponse(prompt);
@@ -51,9 +51,9 @@ export class ChatGptController {
       if ((error as { response: { status: number } }).response.status === 429) {
         res.status(429).send({ error: 'Too many requests.' });
       } else {
-        res
-          .status(400)
-          .send({ error: 'An error occurred while generating the response.' });
+        res.status(400).send({
+          error: 'An error occurred while generating the response.',
+        });
       }
     }
   }

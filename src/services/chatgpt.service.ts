@@ -22,7 +22,10 @@ export class ChatGptService {
       const response = await openai.createChatCompletion({
         model: 'gpt-3.5-turbo', // Change the engine to 'gpt-3.5-turbo'
         messages: [
-          { content: prompt, role: ChatCompletionRequestMessageRoleEnum.User },
+          {
+            content: prompt,
+            role: ChatCompletionRequestMessageRoleEnum.User,
+          },
         ],
       });
 
