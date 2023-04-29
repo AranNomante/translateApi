@@ -18,7 +18,7 @@ export class ChatGptController {
     res.send({ supportedLanguages: Object.keys(SupportedLanguages) });
   }
 
-  @httpPost('/')
+  @httpPost('/translate')
   async generateResponse(req: Request, res: Response): Promise<void> {
     // send json as application/json
     const from: SupportedLanguages = (
