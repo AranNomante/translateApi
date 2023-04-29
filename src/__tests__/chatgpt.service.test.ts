@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { ChatGptService } from '../services/chatgpt.service';
 
 describe('ChatGptService', () => {
