@@ -14,6 +14,7 @@ export class ChatGptController {
 
   @httpPost('/')
   async generateResponse(req: Request, res: Response): Promise<void> {
+    // send json as application/json
     const prompt = req.body.prompt;
 
     try {
