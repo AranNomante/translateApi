@@ -28,7 +28,7 @@ export class ChatGptService {
 
       return response.data.choices[0].message?.content ?? '';
     } catch (error) {
-      console.error('Error generating response:', error);
+      console.dir(error, { depth: null, colors: true });
       throw error;
     }
   }
