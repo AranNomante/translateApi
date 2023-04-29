@@ -9,14 +9,16 @@ export class ChatGptController {
   constructor(@inject(ChatGptService) private chatGptService: ChatGptService) {}
 
   private getParameters(req: Request) {
-    console.log(req.body);
     const from: SupportedLanguages = (
       (req.body.from as string) ?? ''
     ).toUpperCase() as SupportedLanguages;
 
-    const to: SupportedLanguages = (
-      (req.body.to as string) ?? ''
-    ).toUpperCase() as SupportedLanguages;
+    const to: SupportedLanguages[] =
+      typeof req.body.to === 'string'
+        ? [((req.body.to as string) ?? '').toUpperCase() as SupportedLanguages]
+        : (((req.body.to as string[]) ?? []).map((lang) =>
+            lang.toUpperCase(),
+          ) as SupportedLanguages[]);
 
     const target: string = req.body.target ?? '';
 
@@ -25,14 +27,17 @@ export class ChatGptController {
 
   private checkParameters(
     from: string,
-    to: string,
+    to: string[],
     target: string,
   ): string | void {
-    if (
-      !Object.keys(SupportedLanguages).includes(from) ||
-      !Object.keys(SupportedLanguages).includes(to)
-    )
+    if (!Object.keys(SupportedLanguages).includes(from))
       return 'Language not supported.';
+
+    for (const lang of to) {
+      if (!Object.keys(SupportedLanguages).includes(lang)) {
+        return 'Language not supported.';
+      }
+    }
 
     if (target.length > 4097) return 'Target text is too long.';
 
@@ -81,7 +86,9 @@ export class ChatGptController {
       return;
     }
 
-    const prompt = `show translation suggestions for the following word from ${from} to ${to}, explain suggestions: ${target}`;
+    const prompt = `show detailed(details in ${from}) translation suggestions in ${from} for the following word from ${from} to ${to.join(
+      ',',
+    )}: ${target}`;
 
     const result = await this.getResponse(prompt);
 
@@ -105,7 +112,9 @@ export class ChatGptController {
       return;
     }
 
-    const prompt = `translate following from ${from} to ${to}: ${target}`;
+    const prompt = `translate following from ${from} to ${to.join(
+      ',',
+    )}: ${target}`;
 
     const result = await this.getResponse(prompt);
 
