@@ -86,9 +86,9 @@ export class ChatGptController {
       return;
     }
 
-    const prompt = `show detailed(details in ${from}) translation suggestions in ${from} for the following word from ${from} to ${to.join(
+    const prompt = `Suggest translations for the following as a list every suggestion is a list item, explain(in ${from}) why in ${from}, from language is ${from} to language(s) is(are) ${to.join(
       ',',
-    )}: ${target}`;
+    )}, target text is: ${target}`;
 
     const result = await this.getResponse(prompt);
 
